@@ -8,6 +8,213 @@ using namespace std;
 struct stat results;
 int initial_size = 0;
 
+class LevelOneCompressor {
+    public: Trie myTrie;
+    vector < string > vs;
+    char * inpStr = "",
+    * ansStr = "";
+    long long charLen;
+
+    void insertDictionary() {
+        string myText;
+        long long d = 0;
+        ifstream myDict("dictionary.txt");
+        while (myDict.eof() == 0) {
+            myDict >> myText;
+            if (myText[myText.size() - 1] == ')') myText[myText.size() - 1] = ' ';
+            myTrie.insert(myText, d);
+            d++;
+        }
+        myDict.close();
+    }
+    void vectorString() {
+        string myText;
+        ifstream myDict("key.txt");
+        while (myDict.eof() == 0) {
+            myDict >> myText;
+            vs.push_back(myText);
+        }
+        myDict.close();
+    }
+
+    void readToString(char * fileName) {
+        if (stat(fileName, & results) == 0) initial_size = charLen = results.st_size;
+        ifstream myFile1(fileName, ios::in | ios::binary);
+        inpStr = new char[charLen];
+        myFile1.read(inpStr, charLen);
+        myFile1.close();
+    }
+
+    void compress(char * fileName) {
+        insertDictionary();
+        vectorString();
+        readToString(fileName);
+        string buffStr = "", ans = "";
+        for (long long i = 0; i < charLen; ++i) {
+            long long flag = 0, lastPos, key, index;
+            string searc = "";
+            if (inpStr[i] == '\n') continue;
+            if (inpStr[i] >= 'a' && inpStr[i] <= 'z' || (inpStr[i] >= 'A' && inpStr[i] <= 'Z')) {
+                for (long long j = i, k = 0; k < 15 && j < charLen; ++j, ++k) {
+                    if (inpStr[j] >= 'a' && inpStr[j] <= 'z' || (inpStr[j] >= 'A' && inpStr[j] <= 'Z') || inpStr[j] == ' ') {
+                        searc += inpStr[j];
+                        key = myTrie.search(searc);
+                        if (key != -1) {
+                            flag = 1;
+                            lastPos = j;
+                            index = key;
+                        }
+                    } else break;
+                }
+                if (flag == 1) {
+                    if (buffStr.size() > 0) {
+                        if (buffStr.size() < 10) {
+                            ans += '0' + buffStr.size();
+                        } else {
+                            unsigned char c = (int) 0;
+                            ans += '0';
+                            c += 22 + buffStr.size();
+                            ans += c;
+                        }
+                        ans += buffStr;
+                        buffStr = "";
+                    }
+                    ans += vs[index];
+                    i = lastPos;
+                } else {
+                    if (buffStr.size() != 0 || (inpStr[i] >= 'a' && inpStr[i] <= 'z'))
+                        buffStr += inpStr[i];
+                    else
+                        ans += inpStr[i];
+                }
+            } else {
+                if (buffStr.size() == 0 && (inpStr[i] < '0' || inpStr[i] > '9')) {
+                    ans += inpStr[i];
+                } else {
+                    buffStr += inpStr[i];
+                }
+            }
+            if (buffStr.size() > 90) {
+                if (buffStr.size() > 0) {
+                    if (buffStr.size() < 10) {
+                        ans += '0' + buffStr.size();
+                    } else {
+                        unsigned char c = (int) 0;
+                        ans += '0';
+                        c += 22 + buffStr.size();
+                        ans += c;
+                    }
+                    ans += buffStr;
+                    buffStr = "";
+                }
+            }
+        }
+        if (buffStr.size() > 0) {
+            if (buffStr.size() < 10) {
+                ans += '0' + buffStr.size();
+            } else {
+                unsigned char c = (int) 0;
+                ans += '0';
+                c += 22 + buffStr.size();
+                ans += c;
+            }
+            ans += buffStr;
+        }
+        ansStr = new char[ans.size()];
+        for (int i = 0; i < ans.size(); ++i) {
+            ansStr[i] = ans[i];
+        }
+        ofstream myFile("coutput1.bin", ios::out | ios::binary);
+        myFile.write(ansStr, ans.size());
+        myFile.close();
+    }
+
+};
+
+class LevelOneDecompressor {
+    public: Trie myTrie;
+    struct stat results;
+    long long charLen;
+    vector < string > vs;
+    char * outStr = "",
+    * ansStr = "";
+    void insertDictionary() {
+        string myText;
+        long long d = 0;
+        ifstream myDict("key.txt");
+        while (myDict.eof() == 0) {
+            myDict >> myText;
+            myTrie.insert(myText, d);
+            d++;
+        }
+        myDict.close();
+    }
+    void readToString() {
+        if (stat("doutput1.bin", & results) == 0) charLen = results.st_size;
+        ifstream myFile1("doutput1.bin", ios::in | ios::binary);
+        outStr = new char[charLen];
+        myFile1.read(outStr, charLen);
+        myFile1.close();
+    }
+    void vectorString() {
+        string myText;
+        ifstream myDict("dictionary.txt");
+        while (myDict.eof() == 0) {
+            myDict >> myText;
+            if (myText[myText.size() - 1] == ')') myText[myText.size() - 1] = ' ';
+            vs.push_back(myText);
+        }
+        myDict.close();
+
+    }
+    void decompressor(char * fileName) {
+        insertDictionary();
+        vectorString();
+        readToString();
+        string ans = "", temp = "";
+        for (int i = 0; i < charLen; ++i) {
+            if (outStr[i] == '\n') continue;
+            if ( * (outStr + i) >= '0' && * (outStr + i) <= '9') {
+                if ( * (outStr + i) == '0') {
+                    int temp = (int) outStr[i + 1] - 22;
+                    for (int j = i + 2, k = 0; k < temp; ++j, ++k) {
+                        ans += * (outStr + j);
+                        i = j;
+                    }
+                } else {
+                    int temp = outStr[i] - '0';
+                    for (int j = i + 1, k = 0; k < temp; ++j, ++k) {
+                        ans += * (outStr + j);
+                        i = j;
+                    }
+                }
+            } else {
+                if (!(outStr[i] >= 'a' && outStr[i] <= 'z')) {
+                    ans += outStr[i];
+                } else {
+                    temp += outStr[i];
+                    if (outStr[i] <= 'k') {
+                        ans += vs[myTrie.search(temp)];
+                        temp = "";
+                    } else {
+
+                    }
+                }
+            }
+        }
+        ansStr = new char[ans.size()];
+        for (int i = 0; i < ans.size(); ++i) {
+            ansStr[i] = ans[i];
+        }
+        for (int j = strlen(fileName) - 1, k = 0; k < 14; j--, k++) fileName[j] = '\0';
+        strcat(fileName, "decompressed.txt");
+        ofstream myFile(fileName, ios::out | ios::binary);
+        myFile.write(ansStr, ans.size());
+        myFile.close();
+        cout << "\n\tFile Decompressed Succesfully\n\tFile Name: " << fileName << endl;
+    }
+
+};
 
 class LevelTwo {
     public: string lvl1 = "";
