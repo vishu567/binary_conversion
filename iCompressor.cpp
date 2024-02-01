@@ -12,8 +12,7 @@ class LevelOneCompressor
 public:
     Trie myTrie;
     vector<string> vs;
-    char *inpStr = "",
-         *ansStr = "";
+    char *inpStr, *ansStr;
     long long charLen;
 
     void insertDictionary()
@@ -176,8 +175,7 @@ public:
     struct stat results;
     long long charLen;
     vector<string> vs;
-    char *outStr = "",
-         *ansStr = "";
+    char *outStr, *ansStr;
     void insertDictionary()
     {
         string myText;
@@ -493,7 +491,8 @@ public:
 
     void levelTwoMainC(char *fileName)
     {
-        readToString("coutput1.bin");
+        char outputBinFileName[] = "coutput1.bin";
+        readToString(outputBinFileName);
         tempans = new unsigned char[2 * lvl1.size()];
         char_count = 0;
         compress(lvl1);
